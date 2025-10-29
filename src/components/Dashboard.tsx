@@ -11,6 +11,7 @@ import SmartInsights from './SmartInsights';
 import ThemeToggle from './ThemeToggle';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+// Using custom dialog components
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
