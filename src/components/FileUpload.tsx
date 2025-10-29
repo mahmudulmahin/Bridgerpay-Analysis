@@ -4,11 +4,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Papa from 'papaparse';
 
-// Simple interface for file with webkitRelativePath
-type ExtendedFile = File & {
-  webkitRelativePath?: string;
-};
-
 interface FileUploadProps {
   onDataLoaded: (data: any[], fileName: string) => void;
 }

@@ -41,12 +41,6 @@ interface Transaction {
 }
 
 export default function Dashboard() {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-    return () => setIsMounted(false);
-  }, []);
   const [rawData, setRawData] = useState<any[]>([]);
   const [fileName, setFileName] = useState<string>('');
   const [timezone, setTimezone] = useState<'GMT+0' | 'GMT+6'>('GMT+0');
