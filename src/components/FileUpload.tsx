@@ -161,95 +161,81 @@ export default function FileUpload({ onDataLoaded = () => {} }: FileUploadProps)
     });
   };
 
-  const processExcel = (file: File): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      console.log('Reading Excel file:', file.name, 'Size:', file.size);
+  const processExcel = async (file: File): Promise<void> => {
+    try {
+      console.log('Processing Excel file:', file.name, 'Size:', file.size);
       
-      const fileReader = new FileReader();
-      
-      fileReader.onload = async (e) => {
-        try {
-          const arrayBuffer = e.target?.result as ArrayBuffer;
-          if (!arrayBuffer) {
-            throw new Error('Failed to read file: No data received');
+      // Ensure we have a valid file
+      if (!(file instanceof Blob)) {
+        throw new Error('Invalid file object. Expected a Blob or File.');
+      }
+
+      // Read the file using FileReader
+      const data = await new Promise<ArrayBuffer>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result instanceof ArrayBuffer) {
+            resolve(e.target.result);
+          } else {
+            reject(new Error('Failed to read file as ArrayBuffer'));
           }
-          
-          console.log('File read successfully, size:', arrayBuffer.byteLength);
-          
-          // Dynamic import to reduce bundle size
-          const XLSX = await import('xlsx');
-          console.log('XLSX module loaded');
-          
-          const workbook = XLSX.read(new Uint8Array(arrayBuffer), { 
-            type: 'array',
-            cellDates: true,
-            sheetStubs: true
-          });
-          
-          console.log('Workbook sheets:', workbook.SheetNames);
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          
-          console.log('Converting sheet to JSON');
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-            raw: false,
-            dateNF: 'yyyy-mm-dd',
-            defval: ''
-          });
-          
-          console.log(`Converted ${jsonData.length} rows from Excel`);
-          if (jsonData.length > 0) {
-            console.log('Sample data:', jsonData[0]);
-          }
-          
-          // Process in chunks to avoid blocking UI
-          const chunkSize = 1000;
-          const totalChunks = Math.ceil(jsonData.length / chunkSize);
-          
-          console.log(`Processing ${totalChunks} chunks`);
-          
-          for (let i = 0; i < totalChunks; i++) {
-            const start = i * chunkSize;
-            const end = Math.min(start + chunkSize, jsonData.length);
-            const progress = Math.min(100, Math.round((end / jsonData.length) * 100));
-            
-            console.log(`Processing chunk ${i+1}/${totalChunks} (${progress}%)`);
-            
-            // Only call onDataLoaded for the last chunk to avoid multiple updates
-            if (i === totalChunks - 1) {
-              console.log('Sending final data to parent component');
-              onDataLoaded(jsonData, file.name); // Send full dataset at once
-            }
-            
-            setProgress(progress);
-            
-            // Yield to the browser
-            if (i < totalChunks - 1) {
-              await new Promise(resolve => setTimeout(resolve, 0));
-            }
-          }
-          
-          console.log('Excel processing complete');
-          setProgress(100);
-          resolve();
-        } catch (err) {
-          console.error('Excel processing error:', {
-            error: err,
-            message: err instanceof Error ? err.message : 'Unknown error',
-            stack: err instanceof Error ? err.stack : undefined
-          });
-          reject(new Error(`Excel processing error: ${err instanceof Error ? err.message : 'Unknown error'}`));
-        }
-      };
+        };
+        reader.onerror = () => reject(new Error('FileReader error'));
+        reader.readAsArrayBuffer(file);
+      });
+
+      console.log('File read successfully, size:', data.byteLength);
       
-      fileReader.onerror = (error) => {
-        console.error('FileReader error:', error);
-        reject(new Error(`Failed to read file: ${error}`));
-      };
+      // Import XLSX dynamically
+      const XLSX = await import('xlsx');
+      console.log('XLSX module loaded');
       
-      // Start reading the file
-      fileReader.readAsArrayBuffer(file);
-    });
+      // Process the Excel file
+      const workbook = XLSX.read(new Uint8Array(data), { 
+        type: 'array',
+        cellDates: true,
+        sheetStubs: true
+      });
+      
+      console.log('Workbook sheets:', workbook.SheetNames);
+      
+      if (workbook.SheetNames.length === 0) {
+        throw new Error('No sheets found in the Excel file');
+      }
+      
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      
+      console.log('Converting sheet to JSON');
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+        raw: false,
+        dateNF: 'yyyy-mm-dd',
+        defval: ''
+      });
+      
+      console.log(`Converted ${jsonData.length} rows from Excel`);
+      
+      if (jsonData.length === 0) {
+        console.warn('No data found in the Excel sheet');
+      } else {
+        console.log('Sample data:', jsonData[0]);
+      }
+      
+      // Update progress to 100%
+      setProgress(100);
+      
+      // Send data to parent component
+      console.log('Sending data to parent component');
+      onDataLoaded(jsonData, file.name);
+      
+    } catch (err) {
+      console.error('Error processing Excel file:', {
+        error: err,
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
+      throw new Error(`Failed to process Excel file: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
   };
   };
 
