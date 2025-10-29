@@ -50,7 +50,9 @@ export default function FileUpload({ onDataLoaded = () => {} }: FileUploadProps)
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
     
     if (!['csv', 'xlsx', 'xls'].includes(fileExtension || '')) {
-      setError('Please upload a CSV or Excel (.xlsx, .xls) file');
+      const errorMsg = 'Please upload a CSV or Excel (.xlsx, .xls) file';
+      console.error(errorMsg);
+      setError(errorMsg);
       return;
     }
     
@@ -59,89 +61,196 @@ export default function FileUpload({ onDataLoaded = () => {} }: FileUploadProps)
     setProgress(0);
 
     try {
+      console.log('Starting file processing for:', file.name, 'Size:', file.size, 'bytes');
+      
+      // Add a small delay to ensure UI updates are visible
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        throw new Error('File size exceeds 10MB limit');
+      }
+      
       if (fileExtension === 'csv') {
+        console.log('Processing CSV file');
         await processCSV(file);
       } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+        console.log('Processing Excel file');
         await processExcel(file);
       }
+      
+      console.log('File processing completed successfully');
     } catch (err) {
-      console.error('Error processing file:', err);
-      setError(`Failed to process file: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      console.error('Error processing file:', {
+        error: errorMessage,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        stack: err instanceof Error ? err.stack : undefined
+      });
+      setError(`Failed to process file: ${errorMessage}`);
+    } finally {
       setIsProcessing(false);
     }
   };
 
   const processCSV = (file: File): Promise<void> => {
     return new Promise((resolve, reject) => {
-      const rows: any[] = [];
-      let batch: any[] = [];
-      const BATCH_SIZE = 1000;
-      let rowCount = 0;
-      let loadedSize = 0;
-      const totalSize = file.size;
+      try {
+        const rows: any[] = [];
+        let batch: any[] = [];
+        const BATCH_SIZE = 1000;
+        let rowCount = 0;
+        let loadedSize = 0;
+        const totalSize = file.size;
+        
+        console.log('Starting CSV parse for file size:', totalSize);
 
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        step: (results: any) => {
-          batch.push(results.data);
-          rowCount++;
-          loadedSize = results.meta.cursor || loadedSize;
-          
-          if (rowCount % BATCH_SIZE === 0) {
-            rows.push(...batch);
-            batch = [];
-            setProgress(Math.min(99, Math.round((loadedSize / totalSize) * 100)));
+        Papa.parse(file, {
+          header: true,
+          skipEmptyLines: true,
+          preview: 5, // Only parse first 5 rows for preview in console
+          step: (results: any, parser) => {
+            try {
+              if (results.errors.length > 0) {
+                console.warn('CSV parse warnings:', results.errors);
+              }
+              
+              batch.push(results.data);
+              rowCount++;
+              loadedSize = results.meta.cursor || loadedSize;
+              
+              if (rowCount % BATCH_SIZE === 0) {
+                rows.push(...batch);
+                batch = [];
+                const progress = Math.min(99, Math.round((loadedSize / totalSize) * 100));
+                setProgress(progress);
+                console.log(`Processed ${rowCount} rows (${progress}%)`);
+              }
+            } catch (stepError) {
+              console.error('Error in CSV step:', stepError);
+              parser.abort();
+              reject(new Error(`Error processing row ${rowCount}: ${stepError instanceof Error ? stepError.message : 'Unknown error'}`));
+            }
+          },
+          complete: () => {
+            try {
+              if (batch.length) {
+                rows.push(...batch);
+              }
+              console.log(`CSV parse complete. Total rows: ${rowCount}`);
+              console.log('Sample data:', rows.slice(0, 2)); // Log first 2 rows for debugging
+              
+              setProgress(100);
+              onDataLoaded(rows, file.name);
+              resolve();
+            } catch (completeError) {
+              console.error('Error in CSV complete handler:', completeError);
+              reject(completeError);
+            }
+          },
+          error: (error: Error) => {
+            console.error('CSV parsing error:', error);
+            reject(new Error(`CSV parsing error: ${error.message}`));
           }
-        },
-        complete: () => {
-          if (batch.length) {
-            rows.push(...batch);
-          }
-          setProgress(100);
-          onDataLoaded(rows, file.name);
-          setIsProcessing(false);
-          resolve();
-        },
-        error: (error: Error) => {
-          reject(new Error(`CSV parsing error: ${error.message}`));
-        }
-      });
+        });
+      } catch (parseError) {
+        console.error('Unexpected error in processCSV:', parseError);
+        reject(parseError);
+      }
     });
   };
 
-  const processExcel = async (file: File): Promise<void> => {
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const XLSX = await import('xlsx');
-      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+  const processExcel = (file: File): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      console.log('Reading Excel file:', file.name, 'Size:', file.size);
       
-      // Process in chunks to avoid blocking UI
-      const chunkSize = 1000;
-      const totalChunks = Math.ceil(jsonData.length / chunkSize);
+      const fileReader = new FileReader();
       
-      for (let i = 0; i < totalChunks; i++) {
-        const start = i * chunkSize;
-        const end = Math.min(start + chunkSize, jsonData.length);
-        const chunk = jsonData.slice(start, end);
-        
-        onDataLoaded(chunk, file.name);
-        setProgress(Math.min(100, Math.round((end / jsonData.length) * 100)));
-        
-        // Yield to the browser
-        if (i < totalChunks - 1) {
-          await new Promise(resolve => setTimeout(resolve, 0));
+      fileReader.onload = async (e) => {
+        try {
+          const arrayBuffer = e.target?.result as ArrayBuffer;
+          if (!arrayBuffer) {
+            throw new Error('Failed to read file: No data received');
+          }
+          
+          console.log('File read successfully, size:', arrayBuffer.byteLength);
+          
+          // Dynamic import to reduce bundle size
+          const XLSX = await import('xlsx');
+          console.log('XLSX module loaded');
+          
+          const workbook = XLSX.read(new Uint8Array(arrayBuffer), { 
+            type: 'array',
+            cellDates: true,
+            sheetStubs: true
+          });
+          
+          console.log('Workbook sheets:', workbook.SheetNames);
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          
+          console.log('Converting sheet to JSON');
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+            raw: false,
+            dateNF: 'yyyy-mm-dd',
+            defval: ''
+          });
+          
+          console.log(`Converted ${jsonData.length} rows from Excel`);
+          if (jsonData.length > 0) {
+            console.log('Sample data:', jsonData[0]);
+          }
+          
+          // Process in chunks to avoid blocking UI
+          const chunkSize = 1000;
+          const totalChunks = Math.ceil(jsonData.length / chunkSize);
+          
+          console.log(`Processing ${totalChunks} chunks`);
+          
+          for (let i = 0; i < totalChunks; i++) {
+            const start = i * chunkSize;
+            const end = Math.min(start + chunkSize, jsonData.length);
+            const progress = Math.min(100, Math.round((end / jsonData.length) * 100));
+            
+            console.log(`Processing chunk ${i+1}/${totalChunks} (${progress}%)`);
+            
+            // Only call onDataLoaded for the last chunk to avoid multiple updates
+            if (i === totalChunks - 1) {
+              console.log('Sending final data to parent component');
+              onDataLoaded(jsonData, file.name); // Send full dataset at once
+            }
+            
+            setProgress(progress);
+            
+            // Yield to the browser
+            if (i < totalChunks - 1) {
+              await new Promise(resolve => setTimeout(resolve, 0));
+            }
+          }
+          
+          console.log('Excel processing complete');
+          setProgress(100);
+          resolve();
+        } catch (err) {
+          console.error('Excel processing error:', {
+            error: err,
+            message: err instanceof Error ? err.message : 'Unknown error',
+            stack: err instanceof Error ? err.stack : undefined
+          });
+          reject(new Error(`Excel processing error: ${err instanceof Error ? err.message : 'Unknown error'}`));
         }
-      }
+      };
       
-      setProgress(100);
-      setIsProcessing(false);
-    } catch (err) {
-      throw new Error(`Excel processing error: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    }
+      fileReader.onerror = (error) => {
+        console.error('FileReader error:', error);
+        reject(new Error(`Failed to read file: ${error}`));
+      };
+      
+      // Start reading the file
+      fileReader.readAsArrayBuffer(file);
+    });
+  };
   };
 
   return (
