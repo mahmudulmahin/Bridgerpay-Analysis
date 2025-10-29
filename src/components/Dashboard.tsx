@@ -633,8 +633,8 @@ export default function Dashboard() {
   //     .sort((a, b) => a.week.localeCompare(b.week));
   // };
 
-  // Get timezone offset based on user selection
-  const tz = timezone === 'GMT+6' ? 'Asia/Dhaka' : 'UTC';
+  // Timezone handling is currently not in use
+  // const tz = timezone === 'GMT+6' ? 'Asia/Dhaka' : 'UTC';
 
   // Monthly Timeline Data - Focus on approved transactions only (commented out as it's not currently used)
   // const monthlyTimelineStats = (() => {
