@@ -42,8 +42,8 @@ interface Transaction {
 }
 
 export default function Dashboard() {
-  const [rawData] = useState<any[]>([]);
-  const [fileName] = useState<string>('');
+  const [rawData, setRawData] = useState<any[]>([]);
+  const [fileName, setFileName] = useState<string>('');
   const [timezone, setTimezone] = useState<'GMT+0' | 'GMT+6'>('GMT+0');
   const [selectedCountryDetails, setSelectedCountryDetails] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'overview' | 'analytics' | 'insights'>('overview');
@@ -743,11 +743,18 @@ export default function Dashboard() {
                 Welcome to Revenue Analytics
               </h2>
               <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                Upload your transaction data to unlock powerful insights and analytics
+                {fileName 
+                  ? `Loaded ${rawData.length} records from ${fileName}`
+                  : 'Upload your transaction data to unlock powerful insights and analytics'
+                }
               </p>
             </div>
             
-            <FileUpload />
+            <FileUpload onDataLoaded={(data, name) => {
+              setRawData(data);
+              setFileName(name);
+              console.log('Data loaded:', { data, name });
+            }} />
             
             <div className="mt-12 text-center">
               <h3 className="text-xl font-semibold text-slate-800 mb-6">Powerful Analytics at Your Fingertips</h3>
