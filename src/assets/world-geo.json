@@ -1,0 +1,19 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","id":"USA","properties":{"name":"United States","iso_a3":"USA"},"geometry":{"type":"MultiPolygon","coordinates":[[[[-155.0,19.0],[-154.8,19.0],[-154.8,19.2],[-155.0,19.2],[-155.0,19.0]]]]}},
+    {"type":"Feature","id":"CAN","properties":{"name":"Canada","iso_a3":"CAN"},"geometry":{"type":"Polygon","coordinates":[[[-140,60],[-60,60],[-60,83],[-140,83],[-140,60]]]}},
+    {"type":"Feature","id":"MEX","properties":{"name":"Mexico","iso_a3":"MEX"},"geometry":{"type":"Polygon","coordinates":[[[-117,14],[-86,14],[-86,33],[-117,33],[-117,14]]]}},
+    {"type":"Feature","id":"BRA","properties":{"name":"Brazil","iso_a3":"BRA"},"geometry":{"type":"Polygon","coordinates":[[[-74,-34],[-34,-34],[-34,5],[-74,5],[-74,-34]]]}},
+    {"type":"Feature","id":"ARG","properties":{"name":"Argentina","iso_a3":"ARG"},"geometry":{"type":"Polygon","coordinates":[[[-73,-55],[-53,-55],[-53,-22],[-73,-22],[-73,-55]]]}},
+    {"type":"Feature","id":"GBR","properties":{"name":"United Kingdom","iso_a3":"GBR"},"geometry":{"type":"Polygon","coordinates":[[[-8,49],[-2,49],[-2,59],[-8,59],[-8,49]]]}},
+    {"type":"Feature","id":"FRA","properties":{"name":"France","iso_a3":"FRA"},"geometry":{"type":"Polygon","coordinates":[[[-5,42],[8,42],[8,51],[-5,51],[-5,42]]]}},
+    {"type":"Feature","id":"DEU","properties":{"name":"Germany","iso_a3":"DEU"},"geometry":{"type":"Polygon","coordinates":[[ [6,47],[15,47],[15,55],[6,55],[6,47] ]]}},
+    {"type":"Feature","id":"ESP","properties":{"name":"Spain","iso_a3":"ESP"},"geometry":{"type":"Polygon","coordinates":[[[-9,36],[3,36],[3,44],[-9,44],[-9,36]]]}},
+    {"type":"Feature","id":"ITA","properties":{"name":"Italy","iso_a3":"ITA"},"geometry":{"type":"Polygon","coordinates":[[ [7,36],[19,36],[19,47],[7,47],[7,36] ]]}},
+    {"type":"Feature","id":"RUS","properties":{"name":"Russia","iso_a3":"RUS"},"geometry":{"type":"Polygon","coordinates":[[[20,50],[190,50],[190,75],[20,75],[20,50]]]}},
+    {"type":"Feature","id":"CHN","properties":{"name":"China","iso_a3":"CHN"},"geometry":{"type":"Polygon","coordinates":[[[73,18],[135,18],[135,53],[73,53],[73,18]]]}},
+    {"type":"Feature","id":"IND","properties":{"name":"India","iso_a3":"IND"},"geometry":{"type":"Polygon","coordinates":[[[68,7],[97,7],[97,35],[68,35],[68,7]]]}},
+    {"type":"Feature","id":"AUS","properties":{"name":"Australia","iso_a3":"AUS"},"geometry":{"type":"Polygon","coordinates":[[[113,-44],[154,-44],[154,-10],[113,-10],[113,-44]]]}}
+  ]
+}
