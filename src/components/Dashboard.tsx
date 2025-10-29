@@ -1,4 +1,4 @@
-import { useState, useMemo, useTransition, useEffect } from 'react';
+import { useState, useMemo, useTransition } from 'react';
 import moment from 'moment-timezone';
 import FileUpload from './FileUpload';
 import TimezoneSelector from './TimezoneSelector';
@@ -42,8 +42,8 @@ interface Transaction {
 }
 
 export default function Dashboard() {
-  const [rawData, setRawData] = useState<any[]>([]);
-  const [fileName, setFileName] = useState<string>('');
+  const [rawData] = useState<any[]>([]);
+  const [fileName] = useState<string>('');
   const [timezone, setTimezone] = useState<'GMT+0' | 'GMT+6'>('GMT+0');
   const [selectedCountryDetails, setSelectedCountryDetails] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'overview' | 'analytics' | 'insights'>('overview');
@@ -608,24 +608,52 @@ export default function Dashboard() {
   }, [selectedCountryDetails, filteredTransactions, availableOptions.psps]);
 
   // Format currency helper
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
     }).format(amount);
   };
 
-  const handleDataLoaded = (data: any[], name: string) => {
-    setRawData(data);
-    setFileName(name);
-    console.log('Dashboard: Data loaded -', data.length, 'rows from', name);
-  };
+  // Process week groups (commented out as it's not currently used)
+  // const processWeekGroups = (groups: Record<string, any[]>): Array<{
+  //   week: string;
+  //   transactions: number;
+  //   amount: number;
+  // }> => {
+  //   return Object.entries(groups)
+  //     .map(([week, weekTxs]) => {
+  //       const approvedTxs = weekTxs.filter((tx: any) => tx.status === 'approved');
+  //       return {
+  //         week,
+  //         transactions: approvedTxs.length,
+  //         amount: approvedTxs.reduce((sum: number, tx: any) => sum + tx.amount, 0)
+  //       };
+  //     })
+  //     .sort((a, b) => a.week.localeCompare(b.week));
+  // };
+
+  // Get timezone offset based on user selection
+  const tz = timezone === 'GMT+6' ? 'Asia/Dhaka' : 'UTC';
+
+  // Monthly Timeline Data - Focus on approved transactions only (commented out as it's not currently used)
+  // const monthlyTimelineStats = (() => {
+  //   const monthGroups = filteredTransactions.reduce((acc, tx) => {
+  //     const month = moment.tz(tx.processing_ts ?? moment.utc(tx.processing_date).valueOf(), tz).format('YYYY-MM');
+  //     if (!acc[month]) acc[month] = [];
+  //     acc[month].push(tx);
+  //     return acc;
+  //   }, {} as Record<string, Transaction[]>);
+    
+  //   return Object.entries(monthGroups).map(([month, txs]) => ({
+  //     month,
+  //     count: txs.length,
+  //     amount: txs.reduce((sum, tx) => sum + tx.amount, 0)
+  //   }));
+  // })();
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
+    <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b bg-popover/90 backdrop-blur supports-[backdrop-filter]:bg-popover/80">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -719,7 +747,7 @@ export default function Dashboard() {
               </p>
             </div>
             
-            <FileUpload onDataLoaded={handleDataLoaded} />
+            <FileUpload />
             
             <div className="mt-12 text-center">
               <h3 className="text-xl font-semibold text-slate-800 mb-6">Powerful Analytics at Your Fingertips</h3>

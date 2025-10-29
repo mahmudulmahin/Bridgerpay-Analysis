@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import Papa from 'papaparse';
 
 interface FileUploadProps {
-  onDataLoaded: (data: any[], fileName: string) => void;
+  onDataLoaded?: (data: any[], fileName: string) => void;
 }
 
-export default function FileUpload({ onDataLoaded }: FileUploadProps) {
+export default function FileUpload({ onDataLoaded = () => {} }: FileUploadProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
